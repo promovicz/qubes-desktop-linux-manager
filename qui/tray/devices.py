@@ -83,7 +83,8 @@ class DomainMenu(Gtk.Menu):
                 _("Attaching device"),
                 _("Attaching {} to {}").format(self.device.description,
                                                menu_item.vm),
-                Gio.NotificationPriority.NORMAL)
+                Gio.NotificationPriority.NORMAL,
+                notification_id=self.device.backend_domain + self.device.ident)
         except Exception as ex:  # pylint: disable=broad-except
             self.gtk_app.emit_notification(
                 _("Error"),
@@ -92,7 +93,8 @@ class DomainMenu(Gtk.Menu):
                     self.device.description, menu_item.vm, type(ex).__name__,
                     ex),
                 Gio.NotificationPriority.HIGH,
-                error=True)
+                error=True,
+                notification_id=self.device.backend_domain + self.device.ident)
             traceback.print_exc(file=sys.stderr)
 
     def detach_item(self):
@@ -100,7 +102,8 @@ class DomainMenu(Gtk.Menu):
             self.gtk_app.emit_notification(
                 _("Detaching device"),
                 _("Detaching {} from {}").format(self.device.description, vm),
-                Gio.NotificationPriority.NORMAL)
+                Gio.NotificationPriority.NORMAL,
+                notification_id=self.device.backend_domain + self.device.ident)
             try:
                 assignment = qubesadmin.devices.DeviceAssignment(
                     self.device.backend_domain, self.device.ident,
@@ -113,7 +116,9 @@ class DomainMenu(Gtk.Menu):
                     _("Detaching device {0} from {1} failed. "
                       "Error: {2}").format(self.device.description, vm, ex),
                     Gio.NotificationPriority.HIGH,
-                    error=True)
+                    error=True,
+                    notification_id=(self.device.backend_domain +
+                                     self.device.ident))
                 return False
         return True
 
@@ -225,7 +230,9 @@ class DevicesTray(Gtk.Application):
                 self.emit_notification(
                     _("Device available"),
                     _("Device {} is available").format(dev.description),
-                    Gio.NotificationPriority.NORMAL)
+                    Gio.NotificationPriority.NORMAL,
+                    notification_id=(dev.backend_domain +
+                                     dev.ident))
 
         dev_to_remove = [name for name, dev in self.devices.items()
                          if dev.backend_domain == vm
@@ -235,7 +242,9 @@ class DevicesTray(Gtk.Application):
                 _("Device removed"),
                 _("Device {} is removed").format(
                     self.devices[dev_name].description),
-                Gio.NotificationPriority.NORMAL)
+                Gio.NotificationPriority.NORMAL,
+                notification_id=(self.devices[dev_name].backend_domain +
+                                 self.devices[dev_name].ident))
             del self.devices[dev_name]
 
     def initialize_vm_data(self):
@@ -332,13 +341,14 @@ class DevicesTray(Gtk.Application):
         tray_menu.show_all()
         tray_menu.popup_at_pointer(None)  # use current event
 
-    def emit_notification(self, title, message, priority, error=False):
+    def emit_notification(self, title, message, priority, error=False,
+                          notification_id=None):
         notification = Gio.Notification.new(title)
         notification.set_body(message)
         notification.set_priority(priority)
         if error:
             notification.set_icon(Gio.ThemedIcon.new('dialog-error'))
-        self.send_notification(None, notification)
+        self.send_notification(notification_id, notification)
 
 
 def main():
