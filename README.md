@@ -30,3 +30,14 @@ To test if a translation is working, set the LANG environment variable to desire
 
 `LANG=pl_PL.utf-8 qubes-update-gui`
 
+To push translations to transifex (you will need your own transifex API token):
+
+`tx push --translation`
+
+To update transifex source files:
+
+`tx push --source`
+
+To get translations from transifex:
+
+`tx pull`
