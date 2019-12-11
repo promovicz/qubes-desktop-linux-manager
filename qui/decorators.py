@@ -111,14 +111,14 @@ class DomainDecorator(PropertiesDecorator):
                     try:
                         self.cur_storage = \
                             self.vm.get_disk_utilization() / 1024 ** 3
-                    except exc.QubesDaemonNoResponseError:
+                    except (exc.QubesDaemonNoResponseError, KeyError):
                         self.cur_storage = 0
 
                 if not self.max_storage or storage_changed:
                     try:
                         self.max_storage = \
                             self.vm.volumes['private'].size / 1024 ** 3
-                    except exc.QubesDaemonNoResponseError:
+                    except (exc.QubesDaemonNoResponseError, KeyError):
                         self.max_storage = 0
 
                 if self.max_storage == 0:
@@ -240,7 +240,7 @@ def device_hbox(device) -> Gtk.Box:
                                device.description)
     if device.attachments:
         name_label.set_markup('<b>{} ({})</b>'.format(
-            name, ", ".join([vm for vm in device.attachments])))
+            name, ", ".join(list(device.attachments))))
     else:
         name_label.set_text(name)
     name_label.set_max_width_chars(64)
