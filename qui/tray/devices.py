@@ -163,6 +163,7 @@ class Device:
         self.ident = dev.ident
         self.description = dev.description
         self.devclass = dev.devclass
+        self.data = dev.data
         self.attachments = set()
         self.backend_domain = dev.backend_domain.name
         self.vm_icon = dev.backend_domain.label.icon

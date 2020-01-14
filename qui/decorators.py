@@ -8,6 +8,7 @@ import gi  # isort:skip
 gi.require_version('Gtk', '3.0')  # isort:skip
 from gi.repository import Gtk, Pango  # isort:skip
 from qubesadmin import exc
+from qubesadmin.utils import size_to_human
 
 import gettext
 t = gettext.translation("desktop-linux-manager", localedir="/usr/locales",
@@ -251,8 +252,13 @@ def device_hbox(device) -> Gtk.Box:
     name_label.set_max_width_chars(64)
     name_label.set_ellipsize(Pango.EllipsizeMode.END)
 
+    size_label = Gtk.Label(xalign=1)
+    if device.devclass == 'block' and 'size' in device.data:
+        size_label.set_text(size_to_human(int(device.data['size'])))
+
     hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
     hbox.pack_start(name_label, True, True, 0)
+    hbox.pack_start(size_label, False, True, 5)
     hbox.pack_start(dev_icon, False, True, 0)
     return hbox
 
