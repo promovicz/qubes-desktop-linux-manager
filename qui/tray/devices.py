@@ -18,12 +18,18 @@ import qui.decorators
 import gbulb
 gbulb.install()
 
+
 import gettext
 t = gettext.translation("desktop-linux-manager", localedir="/usr/locales",
                         fallback=True)
 _ = t.gettext
 
 DEV_TYPES = ['block', 'usb', 'mic']
+DEV_TYPE_NAMES = {
+    'block': 'Data (Block) Devices',
+    'usb': 'USB Devices',
+    'mic': 'Audio Input'
+}
 
 
 class DomainMenuItem(Gtk.ImageMenuItem):
@@ -138,6 +144,18 @@ class DeviceItem(Gtk.ImageMenuItem):
 
         self.add(self.hbox)
 
+
+class DevclassHeaderMenuItem(Gtk.MenuItem):
+    """ MenuItem with a header, non-interactive """
+
+    def __init__(self, devclass, *args, **kwargs):
+        super(DevclassHeaderMenuItem, self).__init__(*args, **kwargs)
+
+        label = Gtk.Label(xalign=0)
+        label.set_markup("<b>{}</b>".format(
+            DEV_TYPE_NAMES.get(devclass, "Other Devices")))
+
+        self.add(label)
 
 class Device:
     def __init__(self, dev):
@@ -333,10 +351,14 @@ class DevicesTray(Gtk.Application):
 
         menu_items.sort(key=(lambda x: x.device.devclass + str(x.device)))
 
+        if menu_items:
+            tray_menu.add(DevclassHeaderMenuItem(menu_items[0].device.devclass))
+
         for i, item in enumerate(menu_items):
             if i > 0 and item.device.devclass != \
                     menu_items[i-1].device.devclass:
-                tray_menu.add(Gtk.SeparatorMenuItem())
+                tray_menu.add(
+                    DevclassHeaderMenuItem(menu_items[i].device.devclass))
             tray_menu.add(item)
 
         tray_menu.show_all()
