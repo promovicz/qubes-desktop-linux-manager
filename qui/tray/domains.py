@@ -642,12 +642,18 @@ class DomainTray(Gtk.Application):
         if event == 'domain-shutdown':
             if getattr(vm, 'klass', None) == 'TemplateVM':
                 for menu_item in self.menu_items.values():
+                    if not menu_item.vm.is_running():
+                        # A VM based on this template can only be
+                        # outdated if the VM is currently running.
+                        continue
                     if getattr(menu_item.vm, 'template', None) == vm:
                         menu_item.name.update_outdated(True)
             # if the VM was shut down, it is no longer outdated
             item.name.update_outdated(False)
 
         if event in ('domain-start', 'domain-pre-start'):
+            # A newly started VM should not be outdated.
+            item.name.update_outdated(False)
             item.show_all()
         if event == 'domain-shutdown':
             item.hide()
