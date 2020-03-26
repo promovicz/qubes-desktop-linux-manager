@@ -287,6 +287,18 @@ class VMListBoxRow(Gtk.ListBoxRow):
         hbox.pack_start(self.icon, False, False, 0)
         hbox.pack_start(self.label, False, False, 0)
 
+        # check for VMs that may be restored from older Qubes versions
+        # and not support updating; this is a heuristic and may not always work
+        if vm.features.get('qrexec', False) and vm.features.get('gui', False) \
+                and not vm.features.get('os', False):
+            warn_icon = Gtk.Image.new_from_pixbuf(
+                Gtk.IconTheme.get_default().load_icon('dialog-warning', 12, 0))
+            warn_icon.set_tooltip_text(
+                'This qube may have been restored from an older version of '
+                'Qubes and may not be able to update itself correctly. '
+                'Please check the documentation if problems occur.')
+            hbox.pack_start(warn_icon, False, False, 0)
+
         self.add(hbox)
 
     def set_label_text(self, _=None):
