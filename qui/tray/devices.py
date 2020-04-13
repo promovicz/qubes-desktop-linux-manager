@@ -372,6 +372,8 @@ class DevicesTray(Gtk.Application):
         notification.set_priority(priority)
         if error:
             notification.set_icon(Gio.ThemedIcon.new('dialog-error'))
+            if notification_id:
+                notification_id += 'ERROR'
         self.send_notification(notification_id, notification)
 
 
