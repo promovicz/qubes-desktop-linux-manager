@@ -102,6 +102,7 @@ class DomainMenu(Gtk.Menu):
                 Gio.NotificationPriority.HIGH,
                 error=True,
                 notification_id=self.device.backend_domain + self.device.ident)
+            self.update_dev_attachments()
             traceback.print_exc(file=sys.stderr)
 
     def detach_item(self):
@@ -126,8 +127,19 @@ class DomainMenu(Gtk.Menu):
                     error=True,
                     notification_id=(self.device.backend_domain +
                                      self.device.ident))
+                self.update_dev_attachments()
                 return False
         return True
+
+    def update_dev_attachments(self):
+        # use this only in cases of error, when there is a reason
+        # to suspect the correct detach/attach events were not fired
+        self.device.attachments = set()
+
+        for vm in self.qapp.domains:
+            for device in vm.devices[self.device.devclass].attached():
+                if str(device) == self.device.dev_name:
+                    self.device.attachments.add(vm.name)
 
 
 class DeviceItem(Gtk.ImageMenuItem):
