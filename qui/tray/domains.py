@@ -216,6 +216,27 @@ class RunTerminalItem(Gtk.ImageMenuItem):
         self.vm.run_service('qubes.StartApp+qubes-run-terminal')
 
 
+class OpenFileManagerItem(Gtk.ImageMenuItem):
+    """Attempts to open a file manager in the VM. If failed, displayes an
+    error message"""
+
+    def __init__(self, vm, icon_cache):
+        super().__init__()
+        self.vm = vm
+
+        img = Gtk.Image.new_from_pixbuf(
+            icon_cache.get_icon('system-file-manager'))
+
+        self.set_image(img)
+        self.set_label(_('Open File Manager'))
+
+        self.connect('activate', self.open_file_manager)
+
+    def open_file_manager(self, _item):
+        self.vm.run_service('qubes.StartApp+qubes-open-file-manager')
+
+
+
 class StartedMenu(Gtk.Menu):
     ''' The sub-menu for a started domain'''
 
@@ -228,6 +249,7 @@ class StartedMenu(Gtk.Menu):
         self.add(PauseItem(self.vm, icon_cache))
         self.add(ShutdownItem(self.vm, self.app, icon_cache))
         self.add(RunTerminalItem(self.vm, icon_cache))
+        self.add(OpenFileManagerItem(self.vm, icon_cache))
 
         self.show_all()
 
