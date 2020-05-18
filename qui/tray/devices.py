@@ -317,12 +317,11 @@ class DevicesTray(Gtk.Application):
             name = vm.name
         except qubesadmin.exc.QubesPropertyAccessError:
             return  # the VM was deleted before its status could be updated
-
         for domain in self.vms:
-            if domain.name == name:
+            if str(domain) == name:
                 domain.icon = vm.label.icon
 
-        for device in self.devices:
+        for device in self.devices.values():
             if device.backend_domain == name:
                 device.vm_icon = vm.label.icon
 
