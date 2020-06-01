@@ -45,7 +45,8 @@ class IconCache:
             'preferences': 'preferences-system',
             'kill': 'media-record',
             'shutdown': 'media-playback-stop',
-            'unpause': 'media-playback-start'
+            'unpause': 'media-playback-start',
+            'files': 'system-file-manager'
         }
         self.icons = {}
 
@@ -225,7 +226,7 @@ class OpenFileManagerItem(Gtk.ImageMenuItem):
         self.vm = vm
 
         img = Gtk.Image.new_from_pixbuf(
-            icon_cache.get_icon('system-file-manager'))
+            icon_cache.get_icon('files'))
 
         self.set_image(img)
         self.set_label(_('Open File Manager'))
