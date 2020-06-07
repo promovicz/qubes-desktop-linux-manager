@@ -44,6 +44,7 @@ class DomainMenuItem(Gtk.ImageMenuItem):
         self.device = device
 
         icon = self.vm.icon
+
         self.set_image(qui.decorators.create_icon(icon))
         self._hbox = qui.decorators.device_domain_hbox(self.vm, self.attached)
         self.add(self._hbox)
@@ -178,7 +179,12 @@ class Device:
         self.data = dev.data
         self.attachments = set()
         self.backend_domain = dev.backend_domain.name
-        self.vm_icon = dev.backend_domain.label.icon
+
+        try:
+            self.vm_icon = getattr(dev.backend_domain, 'icon',
+                                   dev.backend_domain.label.icon)
+        except qubesadmin.exc.QubesException:
+            self.vm_icon = 'appvm-black'
 
     def __str__(self):
         return self.dev_name
@@ -191,7 +197,11 @@ class VM:
     def __init__(self, vm):
         self.__hash = hash(vm)
         self.vm_name = vm.name
-        self.icon = vm.label.icon
+
+        try:
+            self.icon = getattr(vm, 'icon', vm.label.icon)
+        except qubesadmin.exc.QubesException:
+            self.icon = 'appvm-black'
 
     def __str__(self):
         return self.vm_name

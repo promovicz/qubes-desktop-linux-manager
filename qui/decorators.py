@@ -84,7 +84,11 @@ class DomainDecorator(PropertiesDecorator):
         def update_updateable(self):
             if self.vm is None or not getattr(self.vm, 'updateable', False):
                 return
-            updates_state = self.vm.features.get('updates-available', False)
+            try:
+                updates_state = self.vm.features.get('updates-available', False)
+            except exc.QubesException:
+                # no access to VM features
+                updates_state = False
             self.updateable_icon.set_visible(updates_state)
             self.updates_available = updates_state
             self.update_tooltip()
@@ -202,7 +206,6 @@ class DomainDecorator(PropertiesDecorator):
 
         return cpu_widget
 
-
     def icon(self) -> Gtk.Image:
         ''' Returns a `Gtk.Image` containing the colored lock icon '''
         if self.vm is None:   # should not be called
@@ -210,9 +213,10 @@ class DomainDecorator(PropertiesDecorator):
         try:
             # this is a temporary, emergency fix for unexecpected conflict with
             # qui-devices rewrite
-            icon = self.vm.icon
-        except AttributeError:
-            icon = self.vm.label.icon
+            icon = getattr(self.vm, 'icon', self.vm.label.icon)
+        except exc.QubesDaemonCommunicationError:
+            # no permission to access icon
+            icon = 'appvm-black'
         icon_vm = Gtk.IconTheme.get_default().load_icon(
             icon, 16, 0)
         icon_img = Gtk.Image.new_from_pixbuf(icon_vm)
