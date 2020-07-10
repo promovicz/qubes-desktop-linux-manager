@@ -169,6 +169,8 @@ class DevclassHeaderMenuItem(Gtk.MenuItem):
             DEV_TYPE_NAMES.get(devclass, "Other Devices")))
 
         self.add(label)
+        self.set_sensitive(False)
+
 
 class Device:
     def __init__(self, dev):
