@@ -80,7 +80,7 @@ class PauseItem(Gtk.ImageMenuItem):
         img = Gtk.Image.new_from_pixbuf(icon_cache.get_icon('pause'))
 
         self.set_image(img)
-        self.set_label(_('Pause'))
+        self.set_label(_('Emergency pause'))
 
         self.connect('activate', self.perform_pause)
 
