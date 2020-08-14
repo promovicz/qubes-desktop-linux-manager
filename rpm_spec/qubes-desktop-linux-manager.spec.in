@@ -50,7 +50,7 @@ Requires:  python3-gbulb
 Requires:  libappindicator-gtk3
 Requires:  python3-systemd
 Requires:  gtk3
-Requires:  python3-qubesadmin >= 4.0.16
+Requires:  python3-qubesadmin >= 4.1.8
 Requires:  qubes-mgmt-salt-dom0-update >= 4.0.5
 Requires:  qubes-artwork >= 4.1.5
 
