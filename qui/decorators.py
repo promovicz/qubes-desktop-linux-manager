@@ -113,7 +113,8 @@ class DomainDecorator(PropertiesDecorator):
                         else str(self.template_name)
 
                 if not self.netvm_name or netvm_changed:
-                    self.netvm_name = getattr(self.vm, 'netvm', None)
+                    self.netvm_name = getattr(self.vm, 'netvm',
+                                              "permission denied")
                     self.netvm_name = "None" if not self.netvm_name \
                         else str(self.netvm_name)
 
@@ -223,11 +224,11 @@ class DomainDecorator(PropertiesDecorator):
         return icon_img
 
     def netvm(self) -> Gtk.Label:
-        netvm = self.vm.netvm
+        netvm = getattr(self.vm, 'netvm', "permission denied")
         if netvm is None:
             label = Gtk.Label('No', xalign=0)
         else:
-            label = Gtk.Label(netvm.name, xalign=0)
+            label = Gtk.Label(str(netvm), xalign=0)
 
         self.set_margins(label)
         return label

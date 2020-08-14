@@ -11,6 +11,7 @@ import gi  # isort:skip
 gi.require_version('Gtk', '3.0')  # isort:skip
 from gi.repository import Gtk, Gdk, GObject, Gio  # isort:skip
 from qubesadmin import Qubes
+from qubesadmin import exc
 
 # using locale.gettext is necessary for Gtk.Builder translation support to work
 # in most cases gettext is better, but it cannot handle Gtk.Builder/glade files
@@ -115,13 +116,19 @@ class QubesUpdater(Gtk.Application):
         result = False  # whether at least one VM has updates available
         for vm in self.qapp.domains:
             if vm.klass == 'AdminVM':
-                state = vm.features.get('updates-available', False)
+                try:
+                    state = vm.features.get('updates-available', False)
+                except exc.QubesDaemonCommunicationError:
+                    state = False
                 result = result or state
                 self.vm_list.add(VMListBoxRow(vm, state))
 
         for vm in self.qapp.domains:
             if getattr(vm, 'updateable', False) and vm.klass != 'AdminVM':
-                state = vm.features.get('updates-available', False)
+                try:
+                    state = vm.features.get('updates-available', False)
+                except exc.QubesDaemonCommunicationError:
+                    state = False
                 result = result or state
                 self.vm_list.add(VMListBoxRow(vm, state))
 
@@ -297,15 +304,22 @@ class VMListBoxRow(Gtk.ListBoxRow):
 
         # check for VMs that may be restored from older Qubes versions
         # and not support updating; this is a heuristic and may not always work
-        if vm.features.get('qrexec', False) and vm.features.get('gui', False) \
-                and not vm.features.get('os', False):
-            warn_icon = Gtk.Image.new_from_pixbuf(
-                Gtk.IconTheme.get_default().load_icon('dialog-warning', 12, 0))
-            warn_icon.set_tooltip_text(
-                'This qube may have been restored from an older version of '
-                'Qubes and may not be able to update itself correctly. '
-                'Please check the documentation if problems occur.')
-            hbox.pack_start(warn_icon, False, False, 0)
+        try:
+            if vm.features.get('qrexec', False) and \
+                    vm.features.get('gui', False) and \
+                    not vm.features.get('os', False):
+                warn_icon = Gtk.Image.new_from_pixbuf(
+                    Gtk.IconTheme.get_default().load_icon(
+                        'dialog-warning', 12, 0))
+                warn_icon.set_tooltip_text(
+                    'This qube may have been restored from an older version of '
+                    'Qubes and may not be able to update itself correctly. '
+                    'Please check the documentation if problems occur.')
+                hbox.pack_start(warn_icon, False, False, 0)
+        except exc.QubesDaemonCommunicationError:
+            # we have no permission to access the vm's features, there's no
+            # point in guessing original Qubes version
+            pass
 
         self.add(hbox)
 

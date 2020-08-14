@@ -43,7 +43,8 @@ class DomainMenuItem(Gtk.ImageMenuItem):
 
         self.device = device
 
-        icon = self.vm.icon
+        # if we cannot access vm icon, show default appvm-black
+        icon = getattr(self.vm, 'icon', 'appvm-black')
 
         self.set_image(qui.decorators.create_icon(icon))
         self._hbox = qui.decorators.device_domain_hbox(self.vm, self.attached)
@@ -138,9 +139,12 @@ class DomainMenu(Gtk.Menu):
         self.device.attachments = set()
 
         for vm in self.qapp.domains:
-            for device in vm.devices[self.device.devclass].attached():
-                if str(device) == self.device.dev_name:
-                    self.device.attachments.add(vm.name)
+            try:
+                for device in vm.devices[self.device.devclass].attached():
+                    if str(device) == self.device.dev_name:
+                        self.device.attachments.add(vm.name)
+            except qubesadmin.exc.QubesDaemonAccessError:
+                continue
 
 
 class DeviceItem(Gtk.ImageMenuItem):
@@ -175,12 +179,12 @@ class DevclassHeaderMenuItem(Gtk.MenuItem):
 class Device:
     def __init__(self, dev):
         self.dev_name = str(dev)
-        self.ident = dev.ident
-        self.description = dev.description
-        self.devclass = dev.devclass
-        self.data = dev.data
+        self.ident = getattr(dev, 'ident', 'unknown')
+        self.description = getattr(dev, 'description', 'unknown')
+        self.devclass = getattr(dev, 'devclass', 'unknown')
+        self.data = getattr(dev, 'data', {})
         self.attachments = set()
-        self.backend_domain = dev.backend_domain.name
+        self.backend_domain = str(getattr(dev, 'backend_domain', 'unknown'))
 
         try:
             self.vm_icon = getattr(dev.backend_domain, 'icon',
@@ -293,29 +297,45 @@ class DevicesTray(Gtk.Application):
 
     def initialize_vm_data(self):
         for vm in self.qapp.domains:
-            if vm.klass != 'AdminVM' and vm.is_running():
-                self.vms.add(VM(vm))
+            try:
+                if vm.klass != 'AdminVM' and vm.is_running():
+                    self.vms.add(VM(vm))
+            except qubesadmin.exc.QubesException:
+                # we don't have access to VM state
+                pass
 
     def initialize_dev_data(self):
 
         # list all devices
         for domain in self.qapp.domains:
             for devclass in DEV_TYPES:
-                for device in domain.devices[devclass]:
-                    self.devices[str(device)] = Device(device)
+                try:
+                    for device in domain.devices[devclass]:
+                        self.devices[str(device)] = Device(device)
+                except qubesadmin.exc.QubesException:
+                    # we have no permission to access VM's devices
+                    continue
 
         # list existing device attachments
         for domain in self.qapp.domains:
             for devclass in DEV_TYPES:
-                for device in domain.devices[devclass].attached():
-                    dev = str(device)
-                    if dev in self.devices:
-                        # occassionally ghost UnknownDevices appear when a
-                        # device was removed but not detached from a VM
-                        self.devices[dev].attachments.add(domain.name)
+                try:
+                    for device in domain.devices[devclass].attached():
+                        dev = str(device)
+                        if dev in self.devices:
+                            # occassionally ghost UnknownDevices appear when a
+                            # device was removed but not detached from a VM
+                            self.devices[dev].attachments.add(domain.name)
+                except qubesadmin.exc.QubesException:
+                    # we have no permission to access VM's devices
+                    continue
 
     def device_attached(self, vm, _event, device, **_kwargs):
-        if not vm.is_running() or device.devclass not in DEV_TYPES:
+        try:
+            if not vm.is_running() or device.devclass not in DEV_TYPES:
+                return
+        except qubesadmin.exc.QubesPropertyAccessError:
+            # we don't have access to VM state
             return
 
         if str(device) not in self.devices:
@@ -324,7 +344,11 @@ class DevicesTray(Gtk.Application):
         self.devices[str(device)].attachments.add(str(vm))
 
     def device_detached(self, vm, _event, device, **_kwargs):
-        if not vm.is_running():
+        try:
+            if not vm.is_running():
+                return
+        except qubesadmin.exc.QubesPropertyAccessError:
+            # we don't have access to VM state
             return
 
         device = str(device)
@@ -335,10 +359,14 @@ class DevicesTray(Gtk.Application):
     def vm_start(self, vm, _event, **_kwargs):
         self.vms.add(VM(vm))
         for devclass in DEV_TYPES:
-            for device in vm.devices[devclass].attached():
-                dev = str(device)
-                if dev in self.devices:
-                    self.devices[dev].attachments.add(vm.name)
+            try:
+                for device in vm.devices[devclass].attached():
+                    dev = str(device)
+                    if dev in self.devices:
+                        self.devices[dev].attachments.add(vm.name)
+            except qubesadmin.exc.QubesDaemonAccessError:
+                # we don't have access to devices
+                return
 
     def vm_shutdown(self, vm, _event, **_kwargs):
         self.vms.discard(vm)
@@ -355,11 +383,17 @@ class DevicesTray(Gtk.Application):
             return  # the VM was deleted before its status could be updated
         for domain in self.vms:
             if str(domain) == name:
-                domain.icon = vm.label.icon
+                try:
+                    domain.icon = vm.label.icon
+                except qubesadmin.exc.QubesPropertyAccessError:
+                    domain.icon = 'appvm-block'
 
         for device in self.devices.values():
             if device.backend_domain == name:
-                device.vm_icon = vm.label.icon
+                try:
+                    device.vm_icon = vm.label.icon
+                except qubesadmin.exc.QubesPropertyAccessError:
+                    device.vm_icon = 'appvm-black'
 
     def show_menu(self, _unused, _event):
         tray_menu = Gtk.Menu()

@@ -96,7 +96,11 @@ class UpdatesTray(Gtk.Application):
     def check_vms_needing_update(self):
         self.vms_needing_update.clear()
         for vm in self.qapp.domains:
-            if vm.features.get('updates-available', False) and \
+            try:
+                updates_available = vm.features.get('updates-available', False)
+            except exc.QubesDaemonCommunicationError:
+                updates_available = False
+            if updates_available and \
                     (getattr(vm, 'updateable', False) or vm.klass == 'AdminVM'):
                 self.vms_needing_update.add(vm.name)
 
@@ -114,9 +118,13 @@ class UpdatesTray(Gtk.Application):
         except exc.QubesException:
             # a disposableVM crashed on start
             return
-        if vm_object.features.get('updates-available', False) and \
-                (getattr(vm_object, 'updateable', False) or
-                 vm_object.klass == 'AdminVM'):
+        try:
+            updates_available = vm_object.features.get(
+                'updates-available', False)
+        except exc.QubesDaemonCommunicationError:
+            updates_available = False
+        if updates_available and (getattr(vm_object, 'updateable', False) or
+                                  vm_object.klass == 'AdminVM'):
             self.vms_needing_update.add(vm_object.name)
             self.update_indicator_state()
 

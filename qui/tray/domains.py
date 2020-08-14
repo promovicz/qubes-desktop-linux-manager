@@ -89,7 +89,7 @@ class PauseItem(Gtk.ImageMenuItem):
             self.vm.pause()
         except exc.QubesException as ex:
             show_error(_("Error pausing qube"),
-                       _("The following error occurred when on an "
+                       _("The following error occurred on an "
                        "attempt to pause qube {0}:\n{1}").format(
                            self.vm.name, str(ex)))
 
@@ -113,7 +113,7 @@ class UnpauseItem(Gtk.ImageMenuItem):
             self.vm.unpause()
         except exc.QubesException as ex:
             show_error(_("Error unpausing qube"),
-                       _("The following error occurred when on an attempt "
+                       _("The following error occurred on an attempt "
                        "to unpause qube {0}:\n{1}").format(
                            self.vm.name, str(ex)))
 
@@ -138,7 +138,7 @@ class ShutdownItem(Gtk.ImageMenuItem):
             self.vm.shutdown()
         except exc.QubesException as ex:
             show_error(_("Error shutting down qube"),
-                       _("The following error occurred when on an attempt to "
+                       _("The following error occurred on an attempt to "
                        "shutdown qube {0}:\n{1}").format(
                            self.vm.name, str(ex)))
 
@@ -162,7 +162,7 @@ class KillItem(Gtk.ImageMenuItem):
             self.vm.kill()
         except exc.QubesException as ex:
             show_error(_("Error shutting down qube"),
-                       _("The following error occurred when on an attempt to "
+                       _("The following error occurred on an attempt to "
                        "shutdown qube {0}:\n{1}").format(self.vm.name, str(ex)))
 
 
@@ -215,7 +215,12 @@ class RunTerminalItem(Gtk.ImageMenuItem):
         self.connect('activate', self.run_terminal)
 
     def run_terminal(self, _item):
-        self.vm.run_service('qubes.StartApp+qubes-run-terminal')
+        try:
+            self.vm.run_service('qubes.StartApp+qubes-run-terminal')
+        except exc.QubesException as ex:
+            show_error(_("Error starting terminal"),
+                       _("The following error occurred on an attempt to "
+                       "run terminal {0}:\n{1}").format(self.vm.name, str(ex)))
 
 
 class OpenFileManagerItem(Gtk.ImageMenuItem):
@@ -235,8 +240,13 @@ class OpenFileManagerItem(Gtk.ImageMenuItem):
         self.connect('activate', self.open_file_manager)
 
     def open_file_manager(self, _item):
-        self.vm.run_service('qubes.StartApp+qubes-open-file-manager')
-
+        try:
+            self.vm.run_service('qubes.StartApp+qubes-open-file-manager')
+        except exc.QubesException as ex:
+            show_error(_("Error opening file manager"),
+                       _("The following error occurred on an attempt to "
+                       "open file manager {0}:\n{1}").format(
+                           self.vm.name, str(ex)))
 
 
 class StartedMenu(Gtk.Menu):
@@ -392,10 +402,7 @@ class DomainMenuItem(Gtk.ImageMenuItem):
         self.spinner.hide()
 
     def update_state(self, state):
-        try:
-            vm_klass = self.vm.klass
-        except AttributeError:
-            vm_klass = None
+        vm_klass = getattr(self.vm, 'klass', None)
 
         if not self.vm or vm_klass == 'AdminVM':
             # it's a header or an AdminVM, no need to do anything
@@ -689,9 +696,12 @@ class DomainTray(Gtk.Application):
         if event == 'domain-shutdown':
             if getattr(vm, 'klass', None) == 'TemplateVM':
                 for menu_item in self.menu_items.values():
-                    if not menu_item.vm.is_running():
-                        # A VM based on this template can only be
-                        # outdated if the VM is currently running.
+                    try:
+                        if not menu_item.vm.is_running():
+                            # A VM based on this template can only be
+                            # outdated if the VM is currently running.
+                            continue
+                    except exc.QubesPropertyAccessError:
                         continue
                     if getattr(menu_item.vm, 'template', None) == vm:
                         menu_item.name.update_outdated(True)
@@ -725,10 +735,13 @@ class DomainTray(Gtk.Application):
             self.add_domain_item(None, None, vm)
 
         for item in self.menu_items.values():
-            if item.vm and item.vm.is_running():
-                item.name.update_tooltip(storage_changed=True)
-                item.show_all()
-            else:
+            try:
+                if item.vm and item.vm.is_running():
+                    item.name.update_tooltip(storage_changed=True)
+                    item.show_all()
+                else:
+                    item.hide()
+            except exc.QubesPropertyAccessError:
                 item.hide()
 
         self.tray_menu.add(Gtk.SeparatorMenuItem())
