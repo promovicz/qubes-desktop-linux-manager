@@ -515,36 +515,41 @@ class DomainTray(Gtk.Application):
 
     def emit_notification(self, vm, event, **kwargs):
         tag = 'vm-status-' + vm.name
-        notification = Gio.Notification.new(_(
-            "Qube Status: {}"). format(vm.name))
-        notification.set_priority(Gio.NotificationPriority.NORMAL)
+        label = _("Qube Status: {}").format(vm.name)
+        priority = None
+        icon = None
 
+        # determine properties
         if event == 'domain-pre-start':
-            notification.set_body(_('Domain {} is starting.').format(vm.name))
+            body = _('Domain {} is starting.').format(vm)
         elif event == 'domain-start':
-            notification.set_body(_('Domain {} has started.').format(vm.name))
+            body = _('Domain {} has started.').format(vm.name)
         elif event == 'domain-pre-shutdown':
-            notification.set_body(
-                _('Domain {} is attempting to shutdown.').format(vm.name))
+            body = _('Domain {} is attempting to shutdown.').format(vm.name)
         elif event == 'domain-shutdown':
-            notification.set_body(_('Domain {} has halted.').format(vm.name))
+            body = _('Domain {} has halted.').format(vm.name)
         elif event == 'domain-start-failed':
             tag = 'vm-start-failed-' + vm.name
-            notification.set_body(_('Domain {} has failed to start: {}').format(
-                vm.name, kwargs['reason']))
-            notification.set_priority(Gio.NotificationPriority.HIGH)
-            notification.set_icon(
-                Gio.ThemedIcon.new('dialog-warning'))
+            body = _('Domain {} has failed to start: {}').format(vm.name, kwargs['reason'])
+            priority = Gio.NotificationPriority.HIGH
+            icon = Gio.ThemedIcon.new('dialog-warning')
         elif event == 'domain-shutdown-failed':
             tag = 'vm-shutdown-failed-' + vm.name
-            notification.set_body(
-                _('Domain {} has failed to shutdown: {}').format(
-                    vm.name, kwargs['reason']))
-            notification.set_priority(Gio.NotificationPriority.HIGH)
-            notification.set_icon(
-                Gio.ThemedIcon.new('dialog-warning'))
+            body = _('Domain {} has failed to shutdown: {}').format(vm.name, kwargs['reason'])
+            priority = Gio.NotificationPriority.HIGH
+            icon = Gio.ThemedIcon.new('dialog-warning')
         else:
             return
+
+        # build notification
+        notification = Gio.Notification.new(label)
+        notification.set_body(body)
+        if priority:
+            notification.set_priority(priority)
+        if icon:
+            notification.set_icon(icon)
+
+        # send it
         self.send_notification(tag, notification)
 
     def emit_paused_notification(self):
