@@ -24,7 +24,7 @@ class QubesUpdater(Gtk.Application):
     # pylint: disable=too-many-instance-attributes
 
     def __init__(self, qapp):
-        super(QubesUpdater, self).__init__(
+        super().__init__(
             application_id="org.gnome.example",
             flags=Gio.ApplicationFlags.FLAGS_NONE)
 
@@ -332,7 +332,7 @@ class VMListBoxRow(Gtk.ListBoxRow):
 
 class ProgressListBoxRow(Gtk.ListBoxRow):
     def __init__(self, vm):
-        super(ProgressListBoxRow, self).__init__()
+        super().__init__()
 
         self.vm = vm
 

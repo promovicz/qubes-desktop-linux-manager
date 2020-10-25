@@ -27,7 +27,7 @@ _ = t.gettext
 
 class UpdatesTray(Gtk.Application):
     def __init__(self, app_name, qapp, dispatcher):
-        super(UpdatesTray, self).__init__()
+        super().__init__()
         self.name = app_name
 
         self.dispatcher = dispatcher
