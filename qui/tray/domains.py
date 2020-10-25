@@ -516,26 +516,29 @@ class DomainTray(Gtk.Application):
     def emit_notification(self, vm, event, **kwargs):
         tag = 'vm-status-' + vm.name
         label = _("Qube Status: {}").format(vm.name)
+        body = None
         priority = None
         icon = None
 
         # determine properties
         if event == 'domain-pre-start':
-            body = _('Domain {} is starting.').format(vm)
+            label = _('Domain {} starting').format(vm)
         elif event == 'domain-start':
-            body = _('Domain {} has started.').format(vm.name)
+            label = _('Domain {} started').format(vm.name)
         elif event == 'domain-pre-shutdown':
-            body = _('Domain {} is attempting to shutdown.').format(vm.name)
+            label = _('Domain {} shutting down').format(vm.name)
         elif event == 'domain-shutdown':
-            body = _('Domain {} has halted.').format(vm.name)
+            label = _('Domain {} shut down').format(vm.name)
         elif event == 'domain-start-failed':
             tag = 'vm-start-failed-' + vm.name
-            body = _('Domain {} has failed to start: {}').format(vm.name, kwargs['reason'])
+            label = _('Domain {} failed to start')
+            body = kwargs['reason']
             priority = Gio.NotificationPriority.HIGH
             icon = Gio.ThemedIcon.new('dialog-warning')
         elif event == 'domain-shutdown-failed':
             tag = 'vm-shutdown-failed-' + vm.name
-            body = _('Domain {} has failed to shutdown: {}').format(vm.name, kwargs['reason'])
+            label = _('Domain {} failed to shut down')
+            body = kwargs['reason']
             priority = Gio.NotificationPriority.HIGH
             icon = Gio.ThemedIcon.new('dialog-warning')
         else:
