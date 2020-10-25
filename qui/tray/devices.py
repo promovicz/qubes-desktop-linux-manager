@@ -7,7 +7,7 @@ import traceback
 import gi
 gi.require_version('Gtk', '3.0')  # isort:skip
 gi.require_version('AppIndicator3', '0.1')  # isort:skip
-from gi.repository import Gtk, Gio  # isort:skip
+from gi.repository import Gtk, Gio, GLib  # isort:skip
 
 import qubesadmin
 import qubesadmin.events
@@ -236,6 +236,9 @@ class DevicesTray(Gtk.Application):
         self.set_application_id(self.name)
         self.register()  # register Gtk Application
 
+        self.devs_added = {}
+        self.devs_removed = {}
+
         self.initialize_vm_data()
         self.initialize_dev_data()
 
@@ -260,8 +263,67 @@ class DevicesTray(Gtk.Application):
         self.widget_icon.set_tooltip_markup(
             _('<b>Qubes Devices</b>\nView and manage devices.'))
 
-    def device_list_update(self, vm, _event, **_kwargs):
+    def _remove_notify_added(self, dev):
+        vm_done = []
+        for (vm, l) in self.devs_added.items():
+            if dev in l:
+                l.remove(dev)
+            if len(l) == 0:
+                vm_done.append(vm)
+        for vm in vm_done:
+            del self.devs_added[vm]
+    def notify_devices_added(self, vm, devs):
+        # add devices to timeout state
+        if not vm in self.devs_added:
+            self.devs_added[vm] = []
+        known = self.devs_added[vm]
+        for dev in devs:
+            if not dev in known:
+                known.append(dev)
+                GLib.timeout_add(5000, self._remove_notify_added, dev)
+        # compose body
+        lines = list(map(lambda dev: dev.description, known))
+        lines.sort()
+        body = "\n".join(lines)
+        tag = 'device-added-' + vm.name
+        # emit notification
+        self.emit_notification(
+            _("Devices added on {}").format(vm.name),
+            body,
+            Gio.NotificationPriority.NORMAL,
+            notification_id=tag)
 
+    def _remove_notify_removed(self, dev):
+        vm_done = []
+        for (vm, l) in self.devs_removed.items():
+            if dev in l:
+                l.remove(dev)
+            if len(l) == 0:
+                vm_done.append(vm)
+        for vm in vm_done:
+            del self.devs_removed[vm]
+    def notify_devices_removed(self, vm, devs):
+        # add devices to timeout state
+        if not vm in self.devs_removed:
+            self.devs_removed[vm] = []
+        known = self.devs_removed[vm]
+        for dev in devs:
+            if not dev in known:
+                known.append(dev)
+                GLib.timeout_add(5000, self._remove_notify_removed, dev)
+        # compose body
+        lines = list(map(lambda dev: dev.description, known))
+        lines.sort()
+        body = "\n".join(lines)
+        tag = 'device-removed-' + vm.name
+        # emit notification
+        self.emit_notification(
+            _("Devices removed on {}").format(vm.name),
+            body,
+            Gio.NotificationPriority.NORMAL,
+            notification_id=tag)
+
+    def device_list_update(self, vm, _event, **_kwargs):
         changed_devices = []
 
         # create list of all current devices from the changed VM
@@ -272,27 +334,23 @@ class DevicesTray(Gtk.Application):
         except qubesadmin.exc.QubesException:
             changed_devices = []  # VM was removed
 
+        added = []
         for dev in changed_devices:
-            if str(dev) not in self.devices:
-                self.devices[str(dev)] = dev
-                self.emit_notification(
-                    _("Device available"),
-                    _("Device {} is available").format(dev.description),
-                    Gio.NotificationPriority.NORMAL,
-                    notification_id=(dev.backend_domain +
-                                     dev.ident))
+            dev_name = str(dev)
+            if dev_name not in self.devices:
+                self.devices[dev_name] = dev
+                added.append(dev)
+        if len(added) > 0:
+            self.notify_devices_added(vm, added)
 
-        dev_to_remove = [name for name, dev in self.devices.items()
+        removed_names = [name for name, dev in self.devices.items()
                          if dev.backend_domain == vm
                          and name not in changed_devices]
-        for dev_name in dev_to_remove:
-            self.emit_notification(
-                _("Device removed"),
-                _("Device {} is removed").format(
-                    self.devices[dev_name].description),
-                Gio.NotificationPriority.NORMAL,
-                notification_id=(self.devices[dev_name].backend_domain +
-                                 self.devices[dev_name].ident))
+        removed = [self.devices[name] for name in removed_names
+                   if name in self.devices]
+        if len(removed) > 0:
+            self.notify_devices_removed(vm, removed)
+        for dev_name in removed_names:
             del self.devices[dev_name]
 
     def initialize_vm_data(self):
