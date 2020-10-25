@@ -290,7 +290,7 @@ class DevicesTray(Gtk.Application):
         self.emit_notification(
             _("Devices added on {}").format(vm.name),
             body,
-            Gio.NotificationPriority.NORMAL,
+            Gio.NotificationPriority.LOW,
             notification_id=tag)
 
     def _remove_notify_removed(self, dev):
@@ -320,7 +320,7 @@ class DevicesTray(Gtk.Application):
         self.emit_notification(
             _("Devices removed on {}").format(vm.name),
             body,
-            Gio.NotificationPriority.NORMAL,
+            Gio.NotificationPriority.LOW,
             notification_id=tag)
 
     def device_list_update(self, vm, _event, **_kwargs):
