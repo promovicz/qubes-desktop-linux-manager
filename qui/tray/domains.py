@@ -514,11 +514,13 @@ class DomainTray(Gtk.Application):
         self.tray_menu.popup_at_pointer(None)  # None means current event
 
     def emit_notification(self, vm, event, **kwargs):
+        tag = 'vm-status-' + vm.name
         notification = Gio.Notification.new(_(
             "Qube Status: {}"). format(vm.name))
         notification.set_priority(Gio.NotificationPriority.NORMAL)
 
         if event == 'domain-start-failed':
+            tag = 'vm-start-failed-' + vm.name
             notification.set_body(_('Domain {} has failed to start: {}').format(
                 vm.name, kwargs['reason']))
             notification.set_priority(Gio.NotificationPriority.HIGH)
@@ -534,6 +536,7 @@ class DomainTray(Gtk.Application):
         elif event == 'domain-shutdown':
             notification.set_body(_('Domain {} has halted.').format(vm.name))
         elif event == 'domain-shutdown-failed':
+            tag = 'vm-shutdown-failed-' + vm.name
             notification.set_body(
                 _('Domain {} has failed to shutdown: {}').format(
                     vm.name, kwargs['reason']))
@@ -542,7 +545,7 @@ class DomainTray(Gtk.Application):
                 Gio.ThemedIcon.new('dialog-warning'))
         else:
             return
-        self.send_notification(None, notification)
+        self.send_notification(tag, notification)
 
     def emit_paused_notification(self):
         if not self.pause_notification_out:
