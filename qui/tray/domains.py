@@ -517,7 +517,7 @@ class DomainTray(Gtk.Application):
         tag = 'vm-status-' + vm.name
         label = _("Qube Status: {}").format(vm.name)
         body = None
-        priority = None
+        priority = Gio.NotificationPriority.NORMAL
         icon = None
 
         # determine properties
@@ -547,8 +547,7 @@ class DomainTray(Gtk.Application):
         # build notification
         notification = Gio.Notification.new(label)
         notification.set_body(body)
-        if priority:
-            notification.set_priority(priority)
+        notification.set_priority(priority)
         if icon:
             notification.set_icon(icon)
 
