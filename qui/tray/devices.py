@@ -340,18 +340,20 @@ class DevicesTray(Gtk.Application):
             if dev_name not in self.devices:
                 self.devices[dev_name] = dev
                 added.append(dev)
-        if len(added) > 0:
-            self.notify_devices_added(vm, added)
 
         removed_names = [name for name, dev in self.devices.items()
                          if dev.backend_domain == vm
                          and name not in changed_devices]
         removed = [self.devices[name] for name in removed_names
                    if name in self.devices]
-        if len(removed) > 0:
-            self.notify_devices_removed(vm, removed)
         for dev_name in removed_names:
             del self.devices[dev_name]
+
+        # send notifications
+        if len(added) > 0:
+            self.notify_devices_added(vm, added)
+        if len(removed) > 0:
+            self.notify_devices_removed(vm, removed)
 
     def initialize_vm_data(self):
         for vm in self.qapp.domains:
