@@ -326,7 +326,7 @@ class DevicesTray(Gtk.Application):
     def device_list_update(self, vm, _event, **_kwargs):
         changed_devices = []
 
-        # create list of all current devices from the changed VM
+        # list all devices on VM
         try:
             for devclass in DEV_TYPES:
                 for device in vm.devices[devclass]:
@@ -334,6 +334,7 @@ class DevicesTray(Gtk.Application):
         except qubesadmin.exc.QubesException:
             changed_devices = []  # VM was removed
 
+        # determine what was added
         added = []
         for dev in changed_devices:
             dev_name = str(dev)
@@ -341,6 +342,7 @@ class DevicesTray(Gtk.Application):
                 self.devices[dev_name] = dev
                 added.append(dev)
 
+        # determine what was removed
         removed_names = [name for name, dev in self.devices.items()
                          if dev.backend_domain == vm
                          and name not in changed_devices]
